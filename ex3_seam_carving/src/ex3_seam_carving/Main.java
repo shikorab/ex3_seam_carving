@@ -3,6 +3,7 @@ package ex3_seam_carving;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 
@@ -44,11 +45,19 @@ public class Main {
 		int in_rows = in_img.getHeight();
 		Matrix matrix = new Matrix(in_img);
 		
+		
+		
+			
 		/*
 		 * Calc output image
 		 */
 		int delta_rows = out_rows - in_rows;
 		int delta_cols = out_cols - in_cols;
+		
+		/*add/remove cols cols*/
+		updateCols(matrix, delta_cols);
+		updateRows(matrix, delta_cols);
+		
 		
 		
 		/*
@@ -63,8 +72,39 @@ public class Main {
 			return;
 		}
 		
+		System.out.println("Done");
+		
 		
 
+	}
+
+	private static void updateRows(Matrix matrix, int delta_cols) {
+		matrix.transpose();
+		updateCols(matrix, delta_cols);
+		matrix.transpose();
+	}
+
+	private static void updateCols(Matrix matrix, int delta_cols) {
+		
+		if (delta_cols > 0) {
+			/*add cols*/
+			Energy energy = new Energy(matrix);
+			List<Seam> seam_list = energy.getLowestSeams(delta_cols);
+			
+		} else {
+			/*remove cols*/
+			for (int n = 0; n < Math.abs(delta_cols); n++){
+				/*Get lowest seam*/
+				Energy energy = new Energy(matrix);
+				Seam seam = energy.getLowestSeam();
+				if (delta_cols < 0) {
+					matrix.removeSeam(seam);
+				} else  {
+					matrix.addSeam(seam);
+				}
+			}
+		}
+		
 	}
 
 }

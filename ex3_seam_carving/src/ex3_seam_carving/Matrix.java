@@ -78,4 +78,65 @@ public class Matrix {
 
 		return result;
 	}
+
+	public double get(int i, int j, int k) {
+		return matrix[i][j][k];
+	}
+
+	public int getHeight() {
+		return height;
+	}
+
+	public int getWidth() {
+		return width;
+	}
+
+	public void markSeam(Seam seam) {
+		for (int h = 0; h < height; h++) {
+			matrix[h][seam.get(h)][0] = 255; 
+		}
+	}
+
+	public void removeSeam(Seam seam) {
+		double[][][] tempM = new double[height][width - 1][3];
+
+		for(int i = 0; i < height - 1; i++){
+			int skip = 0;
+			for(int j = 0; j < width - 1; j++){
+				if (seam.get(i) != j){
+					for(int k = 0; k < 3; k++){
+						tempM[i][j - skip][k] = matrix[i][j][k];
+					}
+				}
+				else{
+					skip = 1;
+				}
+			}
+		}
+		
+		width--;
+		matrix = tempM;
+	}
+
+	public void addSeam(Seam seam) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void transpose() {
+		double[][][] tempM = new double[width][height][3];
+
+		for(int i = 0; i < height - 1; i++){
+			for(int j = 0; j < width - 1; j++){
+				for(int k = 0; k < 3; k++){
+					tempM[j][i][k] = matrix[i][j][k];
+				}	
+			}
+		}
+		
+		int temp = width;
+		width = height;
+		height = temp;
+		matrix = tempM;
+	}
 }
