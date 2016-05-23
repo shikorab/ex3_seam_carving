@@ -24,9 +24,9 @@ public class Main {
 		}
 		
 		String in_img_path = args[0];
-		int out_cols = Integer.parseInt(args[1]);
-		int out_rows = Integer.parseInt(args[2]);
-		boolean energy_type = Integer.parseInt(args[3]) != 0;
+		int outCols = Integer.parseInt(args[1]);
+		int outRows = Integer.parseInt(args[2]);
+		boolean energyType = Integer.parseInt(args[3]) != 0;
 		String out_img_path = args[4];
 		
 		/*
@@ -41,8 +41,8 @@ public class Main {
 			e.printStackTrace();
 			return;
 		}
-		int in_cols = in_img.getWidth();
-		int in_rows = in_img.getHeight();
+		int inCols = in_img.getWidth();
+		int inRows = in_img.getHeight();
 		Matrix matrix = new Matrix(in_img);
 		
 		
@@ -51,12 +51,12 @@ public class Main {
 		/*
 		 * Calc output image
 		 */
-		int delta_rows = out_rows - in_rows;
-		int delta_cols = out_cols - in_cols;
+		int deltaRows = outRows - inRows;
+		int deltaCols = outCols - inCols;
 		
 		/*add/remove cols cols*/
-		updateCols(matrix, delta_cols);
-		updateRows(matrix, delta_cols);
+		updateCols(matrix, deltaCols, energyType);
+		updateRows(matrix, deltaRows, energyType);
 		
 		
 		
@@ -78,26 +78,30 @@ public class Main {
 
 	}
 
-	private static void updateRows(Matrix matrix, int delta_cols) {
+	private static void updateRows(Matrix matrix, int deltaCols, boolean energyType) {
 		matrix.transpose();
-		updateCols(matrix, delta_cols);
+		updateCols(matrix, deltaCols, energyType);
 		matrix.transpose();
 	}
 
-	private static void updateCols(Matrix matrix, int delta_cols) {
+	private static void updateCols(Matrix matrix, int deltaCols, boolean energyType) {
 		
-		if (delta_cols > 0) {
+		if (deltaCols > 0) {
 			/*add cols*/
-			Energy energy = new Energy(matrix);
-			List<Seam> seam_list = energy.getLowestSeams(delta_cols);
+			Energy energy = new Energy(matrix, energyType);
+			List<Seam> seamList = energy.getLowestSeams(deltaCols);
+//			for (Seam seam: seamList) {
+//				matrix.markSeam(seam);
+//			}
+			matrix.duplicateSeam(seamList);
 			
 		} else {
 			/*remove cols*/
-			for (int n = 0; n < Math.abs(delta_cols); n++){
+			for (int n = 0; n < Math.abs(deltaCols); n++){
 				/*Get lowest seam*/
-				Energy energy = new Energy(matrix);
+				Energy energy = new Energy(matrix, energyType);
 				Seam seam = energy.getLowestSeam();
-				if (delta_cols < 0) {
+				if (deltaCols < 0) {
 					matrix.removeSeam(seam);
 				} else  {
 					matrix.addSeam(seam);

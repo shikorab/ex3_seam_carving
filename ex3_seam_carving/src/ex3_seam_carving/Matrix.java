@@ -10,6 +10,7 @@ import java.awt.image.DataBufferByte;
 import java.awt.image.Raster;
 import java.awt.image.SampleModel;
 import java.awt.image.WritableRaster;
+import java.util.List;
 /**
  * Matrix is an 3D array (height X width X rgb)
  *
@@ -38,6 +39,12 @@ public class Matrix {
 
 			}
 		}
+	}
+	
+	public Matrix(Matrix matrix) {
+		this.matrix = matrix.matrix.clone();
+		this.height = matrix.height;
+		this.width = matrix.width;
 	}
 	
 	private static double[] getPixelData(BufferedImage img, int x, int y) {
@@ -138,5 +145,38 @@ public class Matrix {
 		width = height;
 		height = temp;
 		matrix = tempM;
+	}
+
+	public void duplicateSeam(List<Seam> seamList) {
+		double[][][] tempM = new double[height][width + seamList.size()][3];
+		int shift;
+		for(int i = 0; i < height - 1; i++){
+			shift = 0;
+			for(int j = 0; j < width - 1; j++){
+				/*Copy cell*/
+				for(int k = 0; k < 3; k++){
+					tempM[i][j + shift][k] = matrix[i][j][k];
+				}
+				
+				/*Check if should be duplicated*/
+				for (Seam seam : seamList) {
+					if (seam.get(i) == j) {
+						shift++;
+						for(int k = 0; k < 3; k++){
+							tempM[i][j + shift][k] = matrix[i][j][k];
+						}
+					}
+				}
+			}
+		}
+		
+		
+		width += seamList.size();
+		matrix = tempM;
+		
+	}
+	
+	public double getGreyScale(int i, int j) {
+		return matrix[i][j][0] * 0.2989 + matrix[i][j][1] * 0.5870 + matrix[i][j][0] * 0.1140; 
 	}
 }

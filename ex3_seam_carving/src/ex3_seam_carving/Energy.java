@@ -5,9 +5,11 @@ import java.util.List;
 
 public class Energy {
 	private Matrix matrix;
+	private boolean energyType;
 	
-	public Energy(Matrix matrix) {
-		this.matrix = matrix;
+	public Energy(Matrix matrix, boolean energyType) {
+		this.matrix = new Matrix(matrix);
+		this.energyType = energyType;
 	}
 	
 	/**
@@ -113,22 +115,64 @@ public class Energy {
 				count++;
 			}
 		}
+		
+		
 	
-		return energy / count;
+		double result =  energy / count;
+		
+		/*Entropy*/
+		if (energyType) {
+			result += getH(i, j);
+		}
+		
+		return result;
 	}
-
-	public List<Seam> getLowestSeams(int delta_cols) {
-		List<Seam> seams_list = new LinkedList<Seam>();
-		Seam seam = getLowestSeam();
+	private double getP(int i, int j) {
+		int count = 0;
+		for (int m = Math.max(0, i - 4); m < Math.min(matrix.getHeight() - 1, i + 4); m++) {
+			for (int n = Math.max(0, j - 4); n < Math.min(matrix.getWidth() - 1, j + 4); n++) {
+				count += matrix.getGreyScale(m, n);
+			}	
+		}
 		
-		markSeam(seam);
-		seams_list.add(seam);
-		
-		return null;
+		return matrix.getGreyScale(i, j) / count;
 	}
-
-	private void markSeam(Seam seam) {
-		// TODO Auto-generated method stub
+	
+	private double getH(int i, int j) {
+		int count = 0;
+		//System.out.println("i: " + i + " j: " + j);
+		for (int m = Math.max(0, i - 4); m < Math.min(matrix.getHeight() - 1, i + 4); m++) {
+			for (int n = Math.max(0, j - 4); n < Math.min(matrix.getWidth() - 1, j + 4); n++) {
+				double P = getP(m, n);
+				//System.out.println("m: " + m + " n: " + n);
+				//System.out.println("P: " + P);
+				count += P * Math.log(P);
+				//System.out.println("count: " + count);
+			}	
+		}
 		
+		return - count;
+	}
+	
+	
+	public List<Seam> getLowestSeams(int deltaCols) {
+		
+		List<Seam> seamsList = new LinkedList<Seam>();
+		for (int seamIndex = 0; seamIndex < deltaCols; seamIndex++) {
+			Seam seam = getLowestSeam();
+			/*Update seam index*/
+			for (int h = 0; h < matrix.getHeight(); h++) {
+				int count = 0;
+				for (Seam s : seamsList) {
+					if (s.get(h) <= seam.get(h)) {
+						count++;
+					}
+				}
+				seam.set(h, seam.get(h) + count);
+			}
+			seamsList.add(seam);
+			matrix.removeSeam(seam);
+		}
+		return seamsList;
 	}
 }
