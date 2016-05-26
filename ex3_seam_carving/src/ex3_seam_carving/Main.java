@@ -18,8 +18,8 @@ public class Main {
 		 * <energy type> = A boolean argument where '0' = regular energy without entropy term, '1' = regular energy with entropy term and '2' = forward energy
 		 * <output image filename> = Full path to the output image (where your program will write the output image to).
 		 */
-		if (args.length != 5) {
-			System.out.println("The program expect 5 arguments");
+		if ((args.length != 5) && ((args.length != 6))) {
+			System.out.println("The program expect 5/6 arguments");
 			return;
 		}
 		
@@ -28,7 +28,11 @@ public class Main {
 		int outRows = Integer.parseInt(args[2]);
 		boolean energyType = Integer.parseInt(args[3]) != 0;
 		String out_img_path = args[4];
-		
+		boolean forward;
+		if (args.length == 6)
+			forward = Integer.parseInt(args[5]) != 0;
+		else
+			forward = false;
 		/*
 		 * Input image
 		 */
@@ -55,8 +59,8 @@ public class Main {
 		int deltaCols = outCols - inCols;
 		
 		/*add/remove cols cols*/
-		updateCols(matrix, deltaCols, energyType);
-		updateRows(matrix, deltaRows, energyType);
+		updateCols(matrix, deltaCols, energyType, forward);
+		updateRows(matrix, deltaRows, energyType, forward);
 		
 		
 		
@@ -78,17 +82,17 @@ public class Main {
 
 	}
 
-	private static void updateRows(Matrix matrix, int deltaCols, boolean energyType) {
+	private static void updateRows(Matrix matrix, int deltaRows, boolean energyType, boolean forward) {
 		matrix.transpose();
-		updateCols(matrix, deltaCols, energyType);
+		updateCols(matrix, deltaRows, energyType, forward);
 		matrix.transpose();
 	}
 
-	private static void updateCols(Matrix matrix, int deltaCols, boolean energyType) {
+	private static void updateCols(Matrix matrix, int deltaCols, boolean energyType, boolean forward) {
 		
 		if (deltaCols > 0) {
 			/*add cols*/
-			Energy energy = new Energy(matrix, energyType);
+			Energy energy = new Energy(matrix, energyType, forward);
 			List<Seam> seamList = energy.getLowestSeams(deltaCols);
 //			for (Seam seam: seamList) {
 //				matrix.markSeam(seam);
@@ -99,7 +103,7 @@ public class Main {
 			/*remove cols*/
 			for (int n = 0; n < Math.abs(deltaCols); n++){
 				/*Get lowest seam*/
-				Energy energy = new Energy(matrix, energyType);
+				Energy energy = new Energy(matrix, energyType, forward);
 				Seam seam = energy.getLowestSeam();
 				if (deltaCols < 0) {
 					matrix.removeSeam(seam);

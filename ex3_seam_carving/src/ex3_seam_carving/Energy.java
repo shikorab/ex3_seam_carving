@@ -5,11 +5,15 @@ import java.util.List;
 
 public class Energy {
 	private Matrix matrix;
+	private double[][] f_mat;
+	private double[][] p_mat;
 	private boolean energyType;
+	private boolean forward;
 	
-	public Energy(Matrix matrix, boolean energyType) {
+	public Energy(Matrix matrix, boolean energyType, boolean forward) {
 		this.matrix = new Matrix(matrix);
 		this.energyType = energyType;
+		this.forward = forward;
 	}
 	
 	/**
@@ -17,9 +21,17 @@ public class Energy {
 	 * 
 	 */
 	public Seam getLowestSeam() {
+		double[] cArr = {0, 0, 0};
 		int height = matrix.getHeight();
 		int width = matrix.getWidth();
 		double[][] M = new double[height][width];
+		
+		/* Calc greyscale and normalized matrix */
+		/*Entropy*/
+		if (energyType) {
+			calc_f_mat();
+			calc_p_mat();
+		}
 		
 		/*Calc energy of first line*/
 		for (int w = 0; w < width; w++) {
@@ -28,13 +40,23 @@ public class Energy {
 		
 		/*Calc the rest of the energy matrix*/
 		for (int h = 1; h < height; h++) {
-			M[h][0] = pixelEnergy(h, 0) + Math.min(M[h-1][1], M[h-1][0]);
-			for (int w = 1; w < width - 1; w++) {
-				M[h][w] = pixelEnergy(h, w) + Math.min(
-														M[h-1][w - 1], 
-														Math.min(M[h-1][w], M[h-1][w +1]));
+			if (forward){
+				forwardEnergy(h, 0, cArr);
 			}
-			M[h][width - 1] = pixelEnergy(h, width - 1) + Math.min(M[h-1][width - 1], M[h-1][width - 2]);
+			M[h][0] = pixelEnergy(h, 0) + Math.min(M[h-1][1]+ cArr[1], M[h-1][0] + cArr[2]);
+			for (int w = 1; w < width - 1; w++) {
+				if (forward){
+					forwardEnergy(h, w, cArr);
+				}
+				
+				M[h][w] = pixelEnergy(h, w) + Math.min(
+														M[h-1][w - 1] + cArr[0], 
+														Math.min(M[h-1][w] + cArr[1], M[h-1][w +1] + cArr[2]));
+			}
+			if (forward){
+				forwardEnergy(h, width - 1, cArr);
+			}
+			M[h][width - 1] = pixelEnergy(h, width - 1) + Math.min(M[h-1][width - 1] + cArr[0], M[h-1][width - 2] + cArr[1]);
 		}
 		
 		/*Calc Seam*/
@@ -71,7 +93,41 @@ public class Energy {
 	}
 	
 	/**
-	 * Calc pixel(i, j) energy
+	 * Calc pixel (i, j) forward energy
+	 * 
+	 */
+	private void forwardEnergy(int i, int j, double[] cArr) {
+		double CL = 0;
+		double CU = 0;
+		double CR = 0;
+		
+		int width = matrix.getWidth();
+		
+		for (int k = 0; k < 3; k++){			
+			if ((j + 1 < width) && (j - 1 > 0)){
+				double temp = Math.abs(matrix.get(i, j + 1, k) - matrix.get(i, j - 1, k));
+				CL += temp;
+				CU += temp;
+				CR += temp;
+			}
+			if ((i - 1 > 0) && (j - 1 > 0)){
+				CL += Math.abs(matrix.get(i - 1, j, k) - matrix.get(i, j - 1, k));
+			}
+			if ((i - 1 > 0) && (j + 1 < width)){
+				CR += Math.abs(matrix.get(i - 1, j, k) - matrix.get(i, j + 1, k));
+			}
+			
+		}
+		
+		/* Store the C values in array */
+		cArr[0] = CL/3.0;
+		cArr[1] = CU/3.0;
+		cArr[2] = CR/3.0;
+	
+	}
+
+	/**
+	 * Calc pixel (i, j) pixelEnergy
 	 * 
 	 */
 	private double pixelEnergy(int i, int j) {
@@ -116,42 +172,56 @@ public class Energy {
 			}
 		}
 		
-		
-	
 		double result =  energy / count;
 		
 		/*Entropy*/
 		if (energyType) {
 			result += getH(i, j);
+			result /= 2.0;
 		}
 		
 		return result;
 	}
-	private double getP(int i, int j) {
-		int count = 0;
-		for (int m = Math.max(0, i - 4); m < Math.min(matrix.getHeight() - 1, i + 4); m++) {
-			for (int n = Math.max(0, j - 4); n < Math.min(matrix.getWidth() - 1, j + 4); n++) {
-				count += matrix.getGreyScale(m, n);
+	
+	private void calc_f_mat(){
+		f_mat = new double[matrix.getHeight()][matrix.getWidth()];
+		
+		for (int m = 0; m < matrix.getHeight(); m++) {
+			for (int n = 0; n < matrix.getWidth() ; n++) {
+				f_mat[m][n] = matrix.getGreyScale(m, n);
 			}	
 		}
+	}
+	
+	private void calc_p_mat(){
+		p_mat = new double[matrix.getHeight()][matrix.getWidth()];
 		
-		return matrix.getGreyScale(i, j) / count;
+		for (int i = 0; i < matrix.getHeight(); i++) {
+			for (int j = 0; j < matrix.getWidth() ; j++) {
+				p_mat[i][j] = 0;
+				for (int m = Math.max(0, i - 4); m < Math.min(matrix.getHeight() - 1, i + 4); m++) {
+					for (int n = Math.max(0, j - 4); n < Math.min(matrix.getWidth() - 1, j + 4); n++) {
+						p_mat[i][j] += f_mat[m][n];
+						/* FIXME: Consider normalize*/
+					}	
+				}
+				p_mat[i][j] = f_mat[i][j]/p_mat[i][j];
+			}	
+		}
 	}
 	
 	private double getH(int i, int j) {
-		int count = 0;
-		//System.out.println("i: " + i + " j: " + j);
+		double res = 0;
 		for (int m = Math.max(0, i - 4); m < Math.min(matrix.getHeight() - 1, i + 4); m++) {
 			for (int n = Math.max(0, j - 4); n < Math.min(matrix.getWidth() - 1, j + 4); n++) {
-				double P = getP(m, n);
-				//System.out.println("m: " + m + " n: " + n);
-				//System.out.println("P: " + P);
-				count += P * Math.log(P);
-				//System.out.println("count: " + count);
+				double P = p_mat[m][n];
+//				System.out.println("P: "+ P);
+				res += P * Math.log(P);
+//				System.out.println("res: "+ res);
 			}	
 		}
-		
-		return - count;
+//		System.out.println("total res: " + res);
+		return - res;
 	}
 	
 	
