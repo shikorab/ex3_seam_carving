@@ -104,16 +104,16 @@ public class Energy {
 		int width = matrix.getWidth();
 		
 		for (int k = 0; k < 3; k++){			
-			if ((j + 1 < width) && (j - 1 > 0)){
+			if ((j + 1 < width) && (j - 1 >= 0)){
 				double temp = Math.abs(matrix.get(i, j + 1, k) - matrix.get(i, j - 1, k));
 				CL += temp;
 				CU += temp;
 				CR += temp;
 			}
-			if ((i - 1 > 0) && (j - 1 > 0)){
+			if ((i - 1 >= 0) && (j - 1 >= 0)){
 				CL += Math.abs(matrix.get(i - 1, j, k) - matrix.get(i, j - 1, k));
 			}
-			if ((i - 1 > 0) && (j + 1 < width)){
+			if ((i - 1 >= 0) && (j + 1 < width)){
 				CR += Math.abs(matrix.get(i - 1, j, k) - matrix.get(i, j + 1, k));
 			}
 			
@@ -199,29 +199,32 @@ public class Energy {
 		for (int i = 0; i < matrix.getHeight(); i++) {
 			for (int j = 0; j < matrix.getWidth() ; j++) {
 				p_mat[i][j] = 0;
+				int count = 0;
 				for (int m = Math.max(0, i - 4); m < Math.min(matrix.getHeight() - 1, i + 4); m++) {
 					for (int n = Math.max(0, j - 4); n < Math.min(matrix.getWidth() - 1, j + 4); n++) {
 						p_mat[i][j] += f_mat[m][n];
-						/* FIXME: Consider normalize*/
+						count++;
 					}	
 				}
-				p_mat[i][j] = f_mat[i][j]/p_mat[i][j];
+				p_mat[i][j] = f_mat[i][j]/(p_mat[i][j] * 81.0 / count);
 			}	
 		}
 	}
 	
 	private double getH(int i, int j) {
 		double res = 0;
+		int count = 0;
 		for (int m = Math.max(0, i - 4); m < Math.min(matrix.getHeight() - 1, i + 4); m++) {
 			for (int n = Math.max(0, j - 4); n < Math.min(matrix.getWidth() - 1, j + 4); n++) {
 				double P = p_mat[m][n];
 //				System.out.println("P: "+ P);
 				res += P * Math.log(P);
+				count++;
 //				System.out.println("res: "+ res);
 			}	
 		}
 //		System.out.println("total res: " + res);
-		return - res;
+		return - res * 81.0 / count;
 	}
 	
 	
